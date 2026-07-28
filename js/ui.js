@@ -83,7 +83,13 @@ class GapleUI {
         }
     }
 
-    _renderTileDots(top, bottom) {
+    _renderTileDots(top, bottom, orientation) {
+        if (orientation === 'horizontal') {
+            return '<div class="tile-left">' + this._dotsHtml(top) + '</div>' +
+                   '<div class="tile-divider tile-divider-vertical"></div>' +
+                   '<div class="tile-right">' + this._dotsHtml(bottom) + '</div>';
+        }
+
         return '<div class="tile-top">' + this._dotsHtml(top) + '</div>' +
                '<div class="tile-divider"></div>' +
                '<div class="tile-bottom">' + this._dotsHtml(bottom) + '</div>';
@@ -92,18 +98,16 @@ class GapleUI {
     _dotsHtml(num) {
         const patterns = {
             0: [],
-            1: [5],
-            2: [1, 9],
-            3: [1, 5, 9],
-            4: [1, 3, 7, 9],
-            5: [1, 3, 5, 7, 9],
-            6: [1, 3, 4, 6, 7, 9]
+            1: ['c'],
+            2: ['tl', 'br'],
+            3: ['tl', 'c', 'br'],
+            4: ['tl', 'tr', 'bl', 'br'],
+            5: ['tl', 'tr', 'c', 'bl', 'br'],
+            6: ['tl', 'ml', 'bl', 'tr', 'mr', 'br']
         };
-        let html = '<div class="dots-grid">';
-        for (let i = 1; i <= 9; i++) {
-            html += '<div class="dot-cell">';
-            if ((patterns[num] || []).includes(i)) html += '<div class="dot"></div>';
-            html += '</div>';
+        let html = '<div class="pip-face">';
+        for (const pos of (patterns[num] || [])) {
+            html += '<span class="pip pip-' + pos + '"></span>';
         }
         html += '</div>';
         return html;
@@ -133,8 +137,10 @@ class GapleUI {
 
         for (const t of board) {
             const div = document.createElement('div');
-            div.className = 'tile tile-board ' + (playerColors[t.placedBy] || '');
-            div.innerHTML = this._renderTileDots(t.top, t.bottom);
+            const isDouble = t.top === t.bottom;
+            const orientation = isDouble ? 'vertical' : 'horizontal';
+            div.className = 'tile tile-board board-orient-' + orientation + ' ' + (playerColors[t.placedBy] || '');
+            div.innerHTML = this._renderTileDots(t.top, t.bottom, orientation);
             el.appendChild(div);
         }
 

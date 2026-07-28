@@ -75,18 +75,7 @@
 
         ui.onTileClick = handleTileClick;
         ui.onPlacement = handlePlacement;
-        ui.onSuggestionClick = handleSuggestionClick;
-
-        document.getElementById('btn-toggle-suggestions').addEventListener('click', function() {
-            const body = document.getElementById('inline-suggestions-body');
-            if (body.style.display === 'none') {
-                body.style.display = '';
-                this.textContent = 'sembunyikan';
-            } else {
-                body.style.display = 'none';
-                this.textContent = 'tampilkan';
-            }
-        });
+        ui.onSuggestionClick = null;
     }
 
     function bindNetworkEvents() {
@@ -319,19 +308,6 @@
         executePlacement(side);
     }
 
-    function handleSuggestionClick(move) {
-        if (!isPlayerTurn || engine.gameOver) return;
-        if (engine.currentPlayer !== activeHuman) return;
-
-        const validMoves = engine.getValidMoves(activeHuman);
-        const movesForTile = validMoves.filter(m => m.tile.id === move.tile.id);
-        if (movesForTile.length === 0) return;
-
-        selectedTile = move.tile;
-        if (movesForTile.length === 1) executePlacement(movesForTile[0].side);
-        else executePlacement(move.side || movesForTile[0].side);
-    }
-
     function executePlacement(side) {
         if (!selectedTile) return;
 
@@ -396,19 +372,12 @@
     }
 
     function renderAll() {
-        const showActiveHand = isPlayerTurn && engine.currentPlayer === activeHuman;
-        const validMoves = showActiveHand ? engine.getValidMoves(activeHuman) : [];
-
-        let coachMoves = null;
-        if (showActiveHand && !engine.gameOver && gameMode === 'local') {
-            try {
-                const coach = ai.getCoachAdvice(activeHuman);
-                if (coach && coach.moves) coachMoves = coach.moves;
-            } catch (e) {}
-        }
+        const isSingleLocal = gameMode === 'local' && humanPlayers === 1;
+        const showActiveHand = gameMode === 'online' || isSingleLocal || (isPlayerTurn && engine.currentPlayer === activeHuman);
+        const validMoves = isPlayerTurn && engine.currentPlayer === activeHuman ? engine.getValidMoves(activeHuman) : [];
 
         ui.renderOpponentHands(engine.players, activeHuman, playerDisplayNames, humanPlayers, aiPlayersOnline);
-        ui.renderPlayerHand(showActiveHand ? engine.players[activeHuman] : [], validMoves, selectedTile ? selectedTile.id : null, coachMoves);
+        ui.renderPlayerHand(showActiveHand ? engine.players[activeHuman] : [], validMoves, selectedTile ? selectedTile.id : null, null);
         ui.renderBoard(engine.board, engine.leftEnd, engine.rightEnd, selectedTile, validMoves);
         ui.renderEndpoints(engine.leftEnd, engine.rightEnd);
         ui.renderMoveHistory(engine.moveHistory);
@@ -422,7 +391,6 @@
 
     function updateAnalysis() {
         if (gameMode === 'online') {
-            ui.renderSuggestions([]);
             ui.renderProbabilities({});
             ui.renderGamePlan(['Analisis probabilitas dimatikan di mode online untuk menjaga informasi tersembunyi.']);
             ui.renderTileTracker([]);
@@ -434,22 +402,7 @@
             const probs = analysis.getOpponentProbabilities(activeHuman);
             ui.renderProbabilities(probs);
 
-            if (isPlayerTurn && !engine.gameOver) {
-                const coach = ai.getCoachAdvice(activeHuman);
-                ui.renderCoachAdvice(coach);
-                const suggestions = coach.moves.map(m => ({
-                    tile: m.tile,
-                    side: m.side,
-                    sideLabel: m.sideLabel,
-                    score: m.winRate,
-                    reasons: m.classification.reasons,
-                    isBest: m.isBest
-                }));
-                ui.renderSuggestions(suggestions);
-            } else {
-                ui.hideInlineSuggestions();
-                ui.renderSuggestions([]);
-            }
+            ui.hideInlineSuggestions();
 
             ui.renderGamePlan(analysis.getGamePlan(activeHuman));
             ui.renderTileTracker(analysis.getTileTracker(activeHuman));

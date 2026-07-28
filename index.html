@@ -100,15 +100,6 @@
             <div class="player-label" id="active-player-label"><span class="player-dot dot-p0"></span> Pemain 1 <span class="tile-count" id="p1-count"></span></div>
             <div id="player-1-hand" class="hand player-hand"></div>
             <button id="btn-pass" class="btn btn-warning" style="display:none; margin-top:8px;">⏭️ Pass (Tidak bisa jalan)</button>
-
-            <!-- AI Coach Panel -->
-            <div id="inline-suggestions" class="inline-suggestions hidden">
-                <div class="inline-suggestions-header">
-                    <span>🧠 AI Coach</span>
-                    <button id="btn-toggle-suggestions" class="btn-toggle-suggestions">sembunyikan</button>
-                </div>
-                <div id="inline-suggestions-body" class="inline-suggestions-body"></div>
-            </div>
         </div>
 
     </div>
@@ -124,11 +115,6 @@
         <div class="analysis-header">
             <h3>📊 Analisis Mendalam</h3>
             <button id="btn-close-analysis" class="btn btn-secondary" style="padding:4px 10px;font-size:0.75rem;">✕</button>
-        </div>
-
-        <div class="analysis-section">
-            <h4>🧠 Rekomendasi Coach</h4>
-            <div id="move-suggestions"></div>
         </div>
 
         <div class="analysis-section">
@@ -165,7 +151,6 @@
             <li>Pemain pertama yang menghabiskan semua kartu menang.</li>
             <li>Jika semua pemain pass berturut-turut, pemain dengan pip terendah menang.</li>
         </ul>
-        <p style="margin-top:10px;"><b>🧠 AI Coach</b> menggunakan Monte Carlo Simulation untuk merekomendasikan langkah terbaik beserta strategi serangan atau bertahan.</p>
         <p><b>Warna kartu di papan:</b> 🔵 Kamu · 🔴 P2 · 🟠 P3 · 🟣 P4</p>
         <div class="modal-buttons">
             <button id="btn-close-help" class="btn btn-primary">Tutup</button>
