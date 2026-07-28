@@ -71,6 +71,7 @@ class GapleEngine {
         let placedTile;
         if (this.board.length === 0) {
             placedTile = { top: tile.top, bottom: tile.bottom, id: tile.id, placedSide: 'first', placedBy: playerIndex };
+            this.board.push(placedTile);
             this.leftEnd = tile.top;
             this.rightEnd = tile.bottom;
         } else if (side === 'left') {
@@ -92,8 +93,6 @@ class GapleEngine {
             }
             this.board.push(placedTile);
         }
-
-        if (this.board.length === 1) this.board[0] = placedTile;
 
         const move = {
             turnNumber: this.turnNumber,

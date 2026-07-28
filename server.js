@@ -13,6 +13,7 @@ const io = new Server(server, {
 });
 
 const PORT = process.env.PORT || 3000;
+const OFFLINE_SEAT_TIMEOUT_MS = parseInt(process.env.OFFLINE_SEAT_TIMEOUT_MS || '180000', 10);
 const rooms = new Map();
 
 app.use(express.static(path.join(__dirname)));
@@ -40,6 +41,7 @@ function createRoom(hostSocketId, hostName) {
     game: null,
     playersBySocket: new Map(),
     playersByKey: new Map(),
+    disconnectTimers: new Map(),
     playersByIndex: [null, null, null, null],
     aiPlayers: new Set(),
     createdAt: Date.now()
@@ -65,6 +67,10 @@ function makePlayerKey() {
 }
 
 function bindPlayerToSocket(room, player, socketId) {
+  if (player.playerKey && room.disconnectTimers.has(player.playerKey)) {
+    clearTimeout(room.disconnectTimers.get(player.playerKey));
+    room.disconnectTimers.delete(player.playerKey);
+  }
   if (player.socketId && room.playersBySocket.has(player.socketId)) {
     room.playersBySocket.delete(player.socketId);
   }
@@ -86,6 +92,10 @@ function detachPlayerSocket(room, socketId) {
 
 function removePlayerFromRoom(room, player) {
   if (!player) return;
+  if (player.playerKey && room.disconnectTimers.has(player.playerKey)) {
+    clearTimeout(room.disconnectTimers.get(player.playerKey));
+    room.disconnectTimers.delete(player.playerKey);
+  }
   if (player.socketId && room.playersBySocket.has(player.socketId)) {
     room.playersBySocket.delete(player.socketId);
   }
@@ -93,6 +103,41 @@ function removePlayerFromRoom(room, player) {
     room.playersByKey.delete(player.playerKey);
   }
   room.playersByIndex[player.playerIndex] = null;
+}
+
+function scheduleOfflineSeatRelease(room, player) {
+  if (!player || !player.playerKey) return;
+  if (room.disconnectTimers.has(player.playerKey)) {
+    clearTimeout(room.disconnectTimers.get(player.playerKey));
+  }
+
+  const timerId = setTimeout(() => {
+    const currentRoom = rooms.get(room.code);
+    if (!currentRoom) return;
+
+    const current = currentRoom.playersByKey.get(player.playerKey);
+    if (!current || current.connected) return;
+
+    const wasHost = currentRoom.hostSocketId && current.socketId === currentRoom.hostSocketId;
+    const releasedIndex = current.playerIndex;
+
+    removePlayerFromRoom(currentRoom, current);
+    currentRoom.aiPlayers.add(releasedIndex);
+
+    if (wasHost) {
+      const nextHost = currentRoom.playersBySocket.values().next().value;
+      currentRoom.hostSocketId = nextHost ? nextHost.socketId : null;
+    }
+
+    emitLobby(currentRoom);
+    if (currentRoom.started) {
+      emitState(currentRoom);
+      runAiTurns(currentRoom);
+    }
+    tryAutoRemoveRoom(currentRoom.code);
+  }, OFFLINE_SEAT_TIMEOUT_MS);
+
+  room.disconnectTimers.set(player.playerKey, timerId);
 }
 
 function sanitizeLobby(room) {
@@ -243,7 +288,7 @@ io.on('connection', (socket) => {
       return;
     }
 
-    const freeIndex = room.playersByIndex.findIndex(p => p === null);
+    const freeIndex = room.playersByIndex.findIndex((p, idx) => p === null && !room.aiPlayers.has(idx));
     if (freeIndex === -1) {
       cb({ ok: false, error: 'Room sudah penuh.' });
       return;
@@ -261,6 +306,7 @@ io.on('connection', (socket) => {
     room.playersBySocket.set(socket.id, player);
     room.playersByKey.set(player.playerKey, player);
     room.playersByIndex[freeIndex] = player;
+    room.aiPlayers.delete(freeIndex);
 
     joinedRoomCode = room.code;
     socket.join(room.code);
@@ -444,6 +490,8 @@ io.on('connection', (socket) => {
       const nextHost = room.playersBySocket.values().next().value;
       room.hostSocketId = nextHost ? nextHost.socketId : null;
     }
+
+    if (player) scheduleOfflineSeatRelease(room, player);
 
     emitLobby(room);
     tryAutoRemoveRoom(room.code);

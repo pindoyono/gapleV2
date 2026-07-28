@@ -5,10 +5,17 @@
   "description": "Gaple with local and online multiplayer",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "start:3010": "PORT=3010 node server.js",
+    "test:syntax": "node --check server.js && node --check js/game-engine.js && node --check js/ai.js && node --check js/analysis.js && node --check js/ui.js && node --check js/network.js && node --check js/app.js && node --check tests/e2e-online.js",
+    "test:e2e": "node tests/e2e-online.js",
+    "verify:all": "npm run test:syntax && npm run test:e2e"
   },
   "dependencies": {
     "express": "^4.21.2",
     "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.1"
   }
 }

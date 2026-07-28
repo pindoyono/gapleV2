@@ -113,6 +113,7 @@
             applyLobbyToNames(lobby);
             syncHumanPlayersFromLobby(lobby);
             renderOnlineLobby(lobby);
+            updateOnlineButtons(lobby);
             updatePlayerLabels();
             renderAll();
         };
@@ -160,6 +161,7 @@
         }
 
         updatePlayerLabels();
+        updateOnlineButtons(onlineLobby);
         renderAll();
         updateAnalysis();
     }
@@ -192,6 +194,7 @@
         }
 
         applyModeUI();
+        updateOnlineButtons(onlineLobby);
         updatePlayerLabels();
         renderAll();
         updateAnalysis();
@@ -487,6 +490,10 @@
 
     function startOnlineGame() {
         if (gameMode !== 'online') return;
+        if (!isCurrentUserHost()) {
+            ui.setStatus('Hanya host yang bisa menekan Start.', 'warning');
+            return;
+        }
         network.startGame();
     }
 
@@ -655,16 +662,20 @@
             const role = p.isAI ? 'AI' : 'Human';
             const me = (network.playerIndex === idx) ? ' (kamu)' : '';
             const state = p.connected ? 'online' : 'offline';
-            return '<div class="online-player-row">' + getPlayerName(idx) + me + ' · ' + role + ' · ' + state + '</div>';
+            const isHost = lobby.hostPlayerIndex === idx;
+            return '<div class="online-player-row' + (isHost ? ' online-player-host' : '') + '">' +
+                getPlayerName(idx) + me + (isHost ? ' [host]' : '') + ' · ' + role + ' · ' + state + '</div>';
         }).join('');
 
         const roomCode = lobby.code;
         const roomLink = buildRoomLink(roomCode);
+        const qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' + encodeURIComponent(roomLink);
 
         elOnlineLobbyInfo.innerHTML =
             '<div class="online-meta">Room: <b>' + roomCode + '</b></div>' +
             '<div class="online-meta">Status: ' + (lobby.started ? 'Sedang bermain' : 'Menunggu start') + '</div>' +
             '<div class="online-link">Link: ' + roomLink + '</div>' +
+            '<img class="online-qr" src="' + qrSrc + '" alt="QR Join Room">' +
             rows;
     }
 
@@ -681,9 +692,27 @@
         engine.reset();
         if (clearInputCode) elOnlineRoomCode.value = '';
         renderOnlineLobby(null);
+        updateOnlineButtons(null);
         updatePlayerLabels();
         renderAll();
         updateAnalysis();
+    }
+
+    function updateOnlineButtons(lobby) {
+        const btnStart = document.getElementById('btn-online-start');
+        const btnCopyCode = document.getElementById('btn-online-copy-code');
+        const btnCopyLink = document.getElementById('btn-online-copy-link');
+        const hasRoom = !!(lobby && lobby.code);
+        const iAmHost = hasRoom && isCurrentUserHost();
+
+        btnStart.disabled = !hasRoom || !iAmHost || !!lobby.started;
+        btnCopyCode.disabled = !hasRoom;
+        btnCopyLink.disabled = !hasRoom;
+    }
+
+    function isCurrentUserHost() {
+        if (!onlineLobby) return false;
+        return onlineLobby.hostPlayerIndex === network.playerIndex;
     }
 
     function applyOnlineStateToEngine(state) {
