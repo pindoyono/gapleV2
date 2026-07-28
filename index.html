@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaple — Latihan & Analisis</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Header -->
+<div id="header">
+    <h1>🀱 GAPLE</h1>
+    <div class="header-settings">
+        <label for="select-game-mode">Game:</label>
+        <select id="select-game-mode" class="select-control">
+            <option value="local" selected>Lokal</option>
+            <option value="online">Online</option>
+        </select>
+        <div id="local-mode-settings">
+            <label for="select-human-players">Pemain:</label>
+            <select id="select-human-players" class="select-control">
+                <option value="1" selected>1 human (vs AI)</option>
+                <option value="2">2 human (2 AI)</option>
+                <option value="3">3 human (1 AI)</option>
+                <option value="4">4 human</option>
+            </select>
+        </div>
+    </div>
+    <div class="header-buttons">
+        <button id="btn-new-game" class="btn btn-primary">▶ Permainan Baru</button>
+        <button id="btn-toggle-analysis" class="btn btn-secondary">📊 Analisis</button>
+        <button id="btn-help" class="btn btn-secondary">❓ Bantuan</button>
+    </div>
+</div>
+
+<!-- Main Layout -->
+<div id="online-controls" class="hidden">
+    <div class="online-controls-inner">
+        <input id="online-name" class="select-control" type="text" placeholder="Nama pemain" maxlength="24">
+        <input id="online-room-code" class="select-control" type="text" placeholder="Kode room" maxlength="6">
+        <button id="btn-online-create" class="btn btn-secondary">Create Room</button>
+        <button id="btn-online-join" class="btn btn-secondary">Join Room</button>
+        <button id="btn-online-start" class="btn btn-primary">Start</button>
+        <button id="btn-online-copy-code" class="btn btn-secondary">Copy Code</button>
+        <button id="btn-online-copy-link" class="btn btn-secondary">Copy Link</button>
+        <button id="btn-online-leave" class="btn btn-warning">Leave</button>
+    </div>
+    <div id="online-lobby-info" class="online-lobby-info">
+        <div class="online-empty">Belum ada room aktif.</div>
+    </div>
+</div>
+
+<div id="main-layout">
+
+    <!-- Left Panel: Kartu belum turun -->
+    <div class="side-panel">
+        <div class="side-panel-title">🎴 Belum Turun</div>
+        <div class="side-panel-body" id="unseen-panel-body"></div>
+    </div>
+
+    <!-- Center: Board -->
+    <div id="board-wrapper">
+
+        <!-- Opponents -->
+        <div id="opponent-area">
+            <div class="opponent-block">
+                <div class="opponent-label" id="p2-label"><span class="player-dot dot-p1"></span>Pemain 2 <span class="tile-count" id="p2-count"></span></div>
+                <div class="opponent-hand" id="p2-hand"></div>
+            </div>
+            <div class="opponent-block">
+                <div class="opponent-label" id="p3-label"><span class="player-dot dot-p2"></span>Pemain 3 <span class="tile-count" id="p3-count"></span></div>
+                <div class="opponent-hand" id="p3-hand"></div>
+            </div>
+            <div class="opponent-block">
+                <div class="opponent-label" id="p4-label"><span class="player-dot dot-p3"></span>Pemain 4 <span class="tile-count" id="p4-count"></span></div>
+                <div class="opponent-hand" id="p4-hand"></div>
+            </div>
+        </div>
+
+        <!-- Board -->
+        <div id="board-container">
+            <div id="board-scroll">
+                <div id="board"><div class="board-empty">Mulai permainan baru</div></div>
+            </div>
+            <div id="endpoints"></div>
+        </div>
+
+        <!-- Status -->
+        <div id="game-status-wrapper">
+            <div id="turn-indicator"></div>
+            <div id="game-status" class="game-status status-info">Klik "Permainan Baru" untuk mulai bermain!</div>
+        </div>
+
+        <!-- Player Area -->
+        <div id="player-area">
+            <div class="player-label" id="active-player-label"><span class="player-dot dot-p0"></span> Pemain 1 <span class="tile-count" id="p1-count"></span></div>
+            <div id="player-1-hand" class="hand player-hand"></div>
+            <button id="btn-pass" class="btn btn-warning" style="display:none; margin-top:8px;">⏭️ Pass (Tidak bisa jalan)</button>
+
+            <!-- AI Coach Panel -->
+            <div id="inline-suggestions" class="inline-suggestions hidden">
+                <div class="inline-suggestions-header">
+                    <span>🧠 AI Coach</span>
+                    <button id="btn-toggle-suggestions" class="btn-toggle-suggestions">sembunyikan</button>
+                </div>
+                <div id="inline-suggestions-body" class="inline-suggestions-body"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Right Panel: Catatan strategis -->
+    <div class="side-panel side-panel-right">
+        <div class="side-panel-title">📋 Catatan</div>
+        <div class="side-panel-body" id="notes-panel-body"><div class="note-empty">Belum ada catatan</div></div>
+    </div>
+
+    <!-- Analysis Panel -->
+    <div id="analysis-panel" class="hidden">
+        <div class="analysis-header">
+            <h3>📊 Analisis Mendalam</h3>
+            <button id="btn-close-analysis" class="btn btn-secondary" style="padding:4px 10px;font-size:0.75rem;">✕</button>
+        </div>
+
+        <div class="analysis-section">
+            <h4>🧠 Rekomendasi Coach</h4>
+            <div id="move-suggestions"></div>
+        </div>
+
+        <div class="analysis-section">
+            <h4>📈 Probabilitas Lawan</h4>
+            <div id="probabilities"></div>
+        </div>
+
+        <div class="analysis-section">
+            <h4>🗺️ Rencana Permainan</h4>
+            <div id="game-plan"></div>
+        </div>
+
+        <div class="analysis-section">
+            <h4>🃏 Status Kartu</h4>
+            <div id="tile-tracker"></div>
+        </div>
+
+        <div class="analysis-section">
+            <h4>📜 Riwayat Langkah</h4>
+            <div id="move-history"></div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Help Modal -->
+<div id="help-modal" class="modal-overlay hidden">
+    <div class="modal">
+        <h2>❓ Cara Bermain</h2>
+        <ul>
+            <li>Klik kartu di tangan kamu untuk memainkannya.</li>
+            <li>Jika kartu bisa dipasang di dua sisi, pilih zona <b>← Kiri</b> atau <b>Kanan →</b> di papan.</li>
+            <li>Jika tidak bisa jalan, klik tombol <b>Pass</b>.</li>
+            <li>Pemain pertama yang menghabiskan semua kartu menang.</li>
+            <li>Jika semua pemain pass berturut-turut, pemain dengan pip terendah menang.</li>
+        </ul>
+        <p style="margin-top:10px;"><b>🧠 AI Coach</b> menggunakan Monte Carlo Simulation untuk merekomendasikan langkah terbaik beserta strategi serangan atau bertahan.</p>
+        <p><b>Warna kartu di papan:</b> 🔵 Kamu · 🔴 P2 · 🟠 P3 · 🟣 P4</p>
+        <div class="modal-buttons">
+            <button id="btn-close-help" class="btn btn-primary">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<!-- Result Modal -->
+<div id="result-modal" class="modal-overlay hidden">
+    <div class="modal">
+        <h2>🏆 Permainan Selesai!</h2>
+        <div id="result-body"></div>
+        <div id="post-analysis" style="margin-top:12px;"></div>
+        <div class="modal-buttons">
+            <button id="btn-close-result" class="btn btn-secondary">Tutup</button>
+            <button id="btn-play-again" class="btn btn-primary">▶ Main Lagi</button>
+        </div>
+    </div>
+</div>
+
+<!-- Turn Handover Modal (multiplayer hotseat) -->
+<div id="handover-modal" class="modal-overlay hidden">
+    <div class="modal handover-modal">
+        <h2>🎯 Giliran Pemain</h2>
+        <p id="handover-message"></p>
+        <p class="handover-sub">Pastikan pemain sebelumnya tidak melihat layar.</p>
+        <div class="modal-buttons">
+            <button id="btn-handover-continue" class="btn btn-primary">Lanjut</button>
+        </div>
+    </div>
+</div>
+
+<script src="js/game-engine.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/analysis.js"></script>
+<script src="js/ui.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="js/network.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
